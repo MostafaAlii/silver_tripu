@@ -9,10 +9,11 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form method="post" action="{{-- route('CallCenterCaptains.updateMediaStatus', $image->id) --}}">
+            <form method="post" action="{{ route('CallCenterCaptains.updateScooterMediaStatus', $image->id) }}">
                 @csrf
                 <input type="hidden" name="photo_status" value="rejected">
-                <input type="hidden" name="imageable_id" value="{{ $data['captain']->profile->captain_id }}">
+                <input type="hidden" name="imageable_id" value="{{ $scooter->id }}">
+                <input type="hidden" name="image_id" value="{{ $image->id }}">
                 <div class="modal-body mx-auto" style="display: flex; align-items: center; flex-direction: column;">
                     Are You Sure To Reject this <span class="text-warning">{{ ucfirst(str_replace('_', ' ',
                         $image->photo_type)) }}</span> Photo

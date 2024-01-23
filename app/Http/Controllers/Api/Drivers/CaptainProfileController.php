@@ -496,30 +496,6 @@ class CaptainProfileController extends Controller
             ];
         }
     }
-
-    /*public function createNewScooter(Request $request) {
-        try {
-            $captain = auth('captain-api')->user();
-            //if ($captain->status_caption_type !== 'scooter' || $captain->captainActivity->status_caption_type !== 'scooter')
-            //return $this->errorResponse("Sorry, Invalid captain type must be scooter your type is {$captain->status_caption_type}");
-            
-            $validator = Validator::make($request->all(), [
-                'scooter_make_id' => 'required|exists:scooter_makes,id',
-                'scooter_model_id' => 'required|exists:scooter_models,id',
-                'scooter_number' => 'required|string',
-                'scooter_color' => 'required|string',
-                'scooter_year' => 'required|numeric',
-            ]);
-            $existingScooter = $captain->scooters()->where('scooter_number', $request->input('scooter_number'))->first();
-            if ($existingScooter) 
-                return $this->errorResponse("Sorry, Scooter with the same number already exists for this {$captain->name}");
-            $captain->scooters()->create($validator->validated());
-    
-            return $this->successResponse("Create Scooter Successfully for {$captain->name}");
-        } catch (\Exception $e) {
-            return $this->errorResponse("Sorry, Something Happen when create {$captain->status_caption_type} for {$captain->name}");
-        }
-    }*/
     
     public function createNewScooter(Request $request) {
         try {
@@ -571,9 +547,9 @@ class CaptainProfileController extends Controller
                             'filename' => $filename,
                             'type' => $type,
                             'photo_type' => $photoType,
-                            'imageable_type' => 'App\Models\Captain',
+                            'imageable_type' => 'App\Models\ScooterImage',
                             'photo_status' => 'not_active',
-                            'imageable_id' => $captain->id,
+                            'imageable_id' => $latestScooter->id,
                         ]);
                     }
                 }
@@ -590,11 +566,14 @@ class CaptainProfileController extends Controller
             if (!$user) 
                 return $this->errorResponse('Sorry, you are not allowed', 403);
         $captainProfile = CaptainProfile::whereCaptainId($user->id)->select('uuid')->first();
+        $latestScooterNumber = $user->scooters()->latest()->value('scooter_number');
+        $latestScooterId = $user->scooters()->latest()->value('id');
         if ($captainProfile) {
             $nameWithoutSpaces = str_replace(' ', '_', $user->name);
             $userDirectory = $nameWithoutSpaces . '_' . $captainProfile->uuid;
-            $typeDirectory = 'scooter' . DIRECTORY_SEPARATOR . $request->type;
+            $typeDirectory = 'scooter' . DIRECTORY_SEPARATOR . $latestScooterNumber . DIRECTORY_SEPARATOR . $request->type;
             $directoryPath = public_path("dashboard/img/{$userDirectory}/{$typeDirectory}");
+            
             if (!file_exists($directoryPath)) 
                 mkdir($directoryPath, 0755, true);
             $fileKeys = [];
@@ -607,12 +586,11 @@ class CaptainProfileController extends Controller
                 'captain_license_back' => 'captain_license_back',
                 'scooter_license_front' => 'scooter_license_front',
                 'scooter_license_back' => 'scooter_license_back',
-                'scooter_front' => 'scooter_front',
-                'scooter_back' => 'scooter_back',
             ];
             foreach ($request->only(array_keys($photoTypeMapping)) as $key => $file) {
                 if ($file) {
                     $filename = $file->getClientOriginalName();
+                    
                     $path = $file->storeAs("{$userDirectory}/{$typeDirectory}", $filename, 'upload_image');
                     $fileKeys[$key] = $path;
                     $photoType = $photoTypeMapping[$key] ?? 'unknown';
@@ -626,9 +604,9 @@ class CaptainProfileController extends Controller
                         'filename' => $filename,
                         'type' => $request->type,
                         'photo_type' => $photoType,
-                        'imageable_type' => 'App\Models\Captain',
+                        'imageable_type' => 'App\Models\ScooterImage',
                         'photo_status' => 'not_active',
-                        'imageable_id' => $user->id,
+                        'imageable_id' => $latestScooterId,
                     ]);
                 }
             }
@@ -643,11 +621,13 @@ class CaptainProfileController extends Controller
                 return $this->errorResponse('Sorry, you are not allowed', 403);
             }
             $imageType = $request->input('type');
+            $latestScooterId = $user->scooters()->latest()->value('id');
             $imageTypeFolder = in_array($imageType, ['scooter', 'personal']) ? $imageType : 'default';
             $captainFolderName = str_replace(' ', '_', $user->name) . '_' . $user->captainProfile->uuid;
+            $latestScooterNumber = $user->scooters()->latest()->value('scooter_number');
             $allMedia = ScooterImage::where([
-                'imageable_type' => 'App\Models\Captain',
-                'imageable_id' => $user->id,
+                'imageable_type' => 'App\Models\ScooterImage',
+                'imageable_id' => $latestScooterId,
                 'type' => $imageType,
             ])->get();
             $mediaData = [];
@@ -656,7 +636,7 @@ class CaptainProfileController extends Controller
                     'photo_status' => $image->photo_status,
                     'photo_type' => $image->photo_type,
                     'reject_reason' => $image->reject_reson,
-                    'image_path' => asset('dashboard/img/' . $captainFolderName . '/scooter/' . $imageTypeFolder . '/' . $image->filename),
+                    'image_path' => asset('dashboard/img/' . $captainFolderName . '/scooter/' . $latestScooterNumber . '/' . $imageTypeFolder . '/' . $image->filename),
                 ];
             }
             $responseData = [
@@ -674,6 +654,7 @@ class CaptainProfileController extends Controller
         try {
             $user = auth('captain-api')->user();
             $captainFolderName = str_replace(' ', '_', $user->name) . '_' . $user->captainProfile->uuid;
+            $latestScooterId = $user->scooters()->latest()->value('id');
             if (!$user)
                 return $this->errorResponse('Sorry, you are not allowed', 403);
 
@@ -692,13 +673,13 @@ class CaptainProfileController extends Controller
             ];
 
             $matchingPersonalImages = ScooterImage::where([
-                'imageable_type' => 'App\Models\Captain',
-                'imageable_id' => $user->id,
+                'imageable_type' => 'App\Models\ScooterImage',
+                'imageable_id' => $latestScooterId,
             ])->whereIn('photo_type', $requiredPersonalFields)->get();
 
             $matchingScooterImages = ScooterImage::where([
-                'imageable_type' => 'App\Models\Captain',
-                'imageable_id' => $user->id,
+                'imageable_type' => 'App\Models\ScooterImage',
+                'imageable_id' => $latestScooterId,
             ])->whereIn('photo_type', $requiredScooterFields)->get();
 
             $personalFieldsComplete = count($matchingPersonalImages) === count($requiredPersonalFields);

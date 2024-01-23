@@ -18,7 +18,7 @@ class CaptionResources extends JsonResource {
             'gender' => $this->gender,
             'status_caption_type' => $this->status_caption_type,
             'inviteFriend' =>  $this->invite->code_invite ?? null,
-            'captaincar' => new CarsCaptionResources($this->captaincar),
+            'captaincar' => ($this->status_caption_type == 'car') ? new CarsCaptionResources($this->captaincar) : null,
             'scooters' => CaptainScooterResources::collection($this->scooters),
             'profile' => new CaptainProfileResources($this->profile),
             'country' => new CountryResources($this->country),

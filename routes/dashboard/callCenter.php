@@ -18,6 +18,8 @@ Route::group(
         Route::post('CallCenterCaptains/upload-media', [CallCenter\CaptainController::class, 'uploadPersonalMedia'])->name('CallCenterCaptains.uploadMedia');
         Route::post('CallCenterCaptains/upload-car-media', [CallCenter\CaptainController::class, 'uploadCarMedia'])->name('CallCenterCaptains.uploadCarMedia');
         Route::post('CallCenterCaptains/update-media-status/{id}', [CallCenter\CaptainController::class, 'updatePersonalMediaStatus'])->name('CallCenterCaptains.updateMediaStatus');
+        Route::post('CallCenterCaptains/update-scooter-media-status/{id}', [CallCenter\CaptainController::class, 'updateScooterMediaStatus'])->name('CallCenterCaptains.updateScooterMediaStatus');
+        Route::post('CallCenterCaptains/upload-scooter-rejected-image', [CallCenter\CaptainController::class, 'uploadScoterRejectedImage'])->name('CallCenterCaptains.uploadScoterRejectedImage');
         Route::post('CallCenterCaptains/update-car-status/{id}', [CallCenter\CaptainController::class, 'updateCarStatus'])->name('CallCenterCaptains.updateCarStatus');
         Route::get('CallCenterCaptains/trips/{id}', [CallCenter\CaptainController::class, 'trips'])->name('CallCenterCaptains.trips');
         Route::put('CallCenterCaptains/profile/{id}', [CallCenter\CaptainController::class, 'updateProfile'])->name('CallCenterCaptains.updateProfile');
