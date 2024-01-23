@@ -86,7 +86,7 @@ class Captain extends Authenticatable implements JWTSubject
     }
 
     public function scooters() {
-        return $this->hasMany(CaptainScooter::class);
+        return $this->hasMany(CaptainScooter::class)->with('scooterImages');
     }
 
     public function images()
