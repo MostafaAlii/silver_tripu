@@ -473,11 +473,59 @@ class CaptainController extends Controller
         return view('dashboard.call-center.captains.new_car', compact('captain', 'data'));
     }
 
-
     public function updateScooterMediaStatus(Request $request, $id) {
         $requestData = $request->all();
         $queryConditions = ['id' => $requestData['image_id'],'imageable_id' => $requestData['imageable_id'],];
         $imageRaw = DB::table('scooter_images')->where($queryConditions)->first();
+        $relatedScooter = CaptainScooter::find($request->imageable_id);
+        $captainId = $relatedScooter->captain->id;
+        $columns = [
+            'personal_avatar' => [
+                'ar' => 'الصوره الشخصية',
+                'en' => 'personal avatar',
+            ],
+            'id_photo_front' => [
+                'ar' => 'صوره الهوية امام',
+                'en' => 'Nationality ID front',
+            ],
+            'id_photo_back' => [
+                'ar' => 'صوره الهوية خلف',
+                'en' => 'Nationality ID back',
+            ],
+            'criminal_record' => [
+                'ar' => 'السجل الجنائى',
+                'en' => 'Criminal Record',
+            ],
+            'captain_license_front' => [
+                'ar' => 'رخصة السائق امام',
+                'en' => 'captain license front',
+            ],
+            'captain_license_back' => [
+                'ar' => 'رخصة السائق خلف',
+                'en' => 'captain license back',
+            ],
+            'scooter_license_front' => [
+                'ar' => 'رخصة الدراجة امام',
+                'en' => 'scooter license front'
+            ],
+            'scooter_license_back' => [
+                'ar' => 'رخصة الدراجة خلف',
+                'en' => 'scooter license back'
+            ]
+        ];
+        $messages = [
+            'Reject' => [
+                'ar' => 'مرفوضه',
+                'en' => 'Reject',
+            ],
+            'Accept' => [
+                'ar' => 'مقبول',
+                'en' => 'Accept',
+            ],
+        ];
+        $accept = array_key_exists('Accept', $messages) ? $messages['Accept']['ar'] : null;
+        $reject = array_key_exists('Reject', $messages) ? $messages['Reject']['ar'] : null;
+        $specificName = array_key_exists($imageRaw->photo_type, $columns) ? $columns[$imageRaw->photo_type]['ar'] : null;
         if ($imageRaw) {
             $updateData = [];
             if ($request->has('photo_status')) {
@@ -491,110 +539,16 @@ class CaptainController extends Controller
                 $updateData['reject_reson'] = $request->input('reject_reson');
             if (!empty($updateData)) 
                 DB::table('scooter_images')->where($queryConditions)->update($updateData);
-            return redirect()->back()->with('success', 'Image ' . ucfirst(str_replace('_', ' ', $imageRaw->photo_type)) . ' updated status successfully');
-        }
-        /*try {
-            $columns = [
-                'personal_avatar' => [
-                    'ar' => 'الصوره الشخصية',
-                    'en' => 'personal avatar',
-                ],
-                'id_photo_front' => [
-                    'ar' => 'صوره الهوية امام',
-                    'en' => 'Nationality ID front',
-                ],
-                'id_photo_back' => [
-                    'ar' => 'صوره الهوية خلف',
-                    'en' => 'Nationality ID back',
-                ],
-                'criminal_record' => [
-                    'ar' => 'السجل الجنائى',
-                    'en' => 'Criminal Record',
-                ],
-                'captain_license_front' => [
-                    'ar' => 'رخصة السائق امام',
-                    'en' => 'captain license front',
-                ],
-                'captain_license_back' => [
-                    'ar' => 'رخصة السائق خلف',
-                    'en' => 'captain license back',
-                ],
-            ];
-
-
-            $messages = [
-                'Reject' => [
-                    'ar' => 'مرفوضه',
-                    'en' => 'Reject',
-                ],
-                'Accept' => [
-                    'ar' => 'مقبول',
-                    'en' => 'Accept',
-                ],
-            ];
-            $image = Image::find($id);
-            $captain = Captain::findOrfail($request->imageable_id);
-            $accept = array_key_exists('Accept', $messages) ? $messages['Accept']['ar'] : null;
-            $reject = array_key_exists('Reject', $messages) ? $messages['Reject']['ar'] : null;
-
-            $specificName = array_key_exists($image->photo_type, $columns) ? $columns[$image->photo_type]['ar'] : null;
-            if (!$image)
-                return redirect()->back()->with('error', 'Image not found');
-            $updateData = [];
-            if ($request->has('photo_status')) {
-                $updateData['photo_status'] = $request->input('photo_status');
-                $updateData['updated_by_callcenter_id'] = get_user_data()->id;
-                $updateData['updated_at_callcenter'] = now();
-            }
-
-            if ($request->has('reject_reson'))
-                $updateData['reject_reson'] = $request->input('reject_reson');
-
-
-            $image->update($updateData);
             $body = ($request->input('photo_status') === 'accept') ? 'Good Your ' . $specificName . ' Successfully' : 'Sorry this image ' . $specificName;
             $title = ($request->input('photo_status') === 'accept') ? $accept . ' ' . $specificName : ' ' . $reject . ' ' . $specificName;
-
-
             if ($request->photo_status == "accept") {
-                sendNotificationCaptain($request->imageable_id, 'تم الموافقه على الورق', '');
+                sendNotificationCaptain($captainId, 'تم الموافقه على الورق', '');
             } else {
-                sendNotificationCaptain($request->imageable_id, 'هناك خظأ ما', $request->input('reject_reson'));
+                sendNotificationCaptain($captainId, 'هناك خظأ ما', $request->input('reject_reson'));
             }
-
-
-            return redirect()->back()->with('success', 'Image ' . ucfirst(str_replace('_', ' ', $image->photo_type)) . ' updated status successfully');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'An error occurred during the update: ' . $e->getMessage());
-        }*/
+            return redirect()->back()->with('success', 'Image ' . ucfirst(str_replace('_', ' ', $imageRaw->photo_type)) . ' updated status successfully');
+        }
     }
-
-    /*public function uploadScoterRejectedImage(Request $request) {
-        $existingImage = DB::table('scooter_images')->whereId($request->image_id)->first();
-        $relatedScooter = CaptainScooter::find($request->imageable_id);
-        $captainName = str_replace(' ', '_', $relatedScooter->captain->name);
-        $captainProfileUUid = $relatedScooter->captain->profile->uuid;
-        $captainNameWithUUid = $captainName . '_' . $captainProfileUUid;
-        $path = $captainNameWithUUid . '/' . $relatedScooter->captain->status_caption_type . '/' . $relatedScooter->scooter_number;
-        $oldImagePath = public_path($path . '/' . $existingImage->type . '/' . $existingImage->filename);
-        $newPath = public_path($path . '/' . $existingImage->type);
-        if (file_exists($oldImagePath)) 
-            unlink($oldImagePath);
-        $newImage = $request->file('filename');
-        $newImagePath = $newImage->storeAs($path .'/'. $existingImage->type, $newImage->getClientOriginalName(), 'upload_image'); 
-        DB::table('scooter_images')->whereId($request->image_id)->update([
-            'filename' => $newImage->getClientOriginalName(),
-            'type' => $existingImage->type,
-            'photo_type' => $existingImage->photo_type,
-            'photo_status' => 'not_active',
-            'imageable_type' => $existingImage->imageable_type,
-            'reject_reson' => null,
-            'imageable_id'  => $existingImage->imageable_id,
-            'updated_by_callcenter_id' => get_user_data()->id,
-            'updated_at_callcenter' => now(),
-        ]);  
-        return redirect()->back()->with('success', "Update {$existingImage->photo_type} Successfully");
-    }*/
 
     public function uploadScoterRejectedImage(Request $request) {
         try {
